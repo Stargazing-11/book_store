@@ -1,48 +1,60 @@
 const mongoose = require("mongoose");
+const Joi = require("joi");
 
 const bookSchema = mongoose.Schema({
-  id: {
-    type: String,
-    required: true,
-  },
   title: {
     type: String,
     required: true,
   },
   author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Author",
+    type: String,
     required: true,
   },
   edition: {
     type: Number,
     required: true,
   },
-
-  discription: {
+  description: {
     type: String,
     required: false,
   },
-  Category: {
+  genre: {
     type: String,
     required: true,
   },
-  donated: {
-    type: Boolean,
-    default: false,
+  tags: {
+    type: Array,
+    default: [],
   },
-});
-
-bookSchema.statics.validationSchema = Joi.object({
-  id: Joi.string().required(),
-  title: Joi.string().required(),
-  author: Joi.string().required(),
-  edition: Joi.number().required(),
-  description: Joi.string().allow(""),
-  category: Joi.string().required(),
-  donated: Joi.boolean().default(false),
+  price: {
+    type: Number,
+    required: true,
+  },
+  coverImage: {
+    type: String,
+  },
+  amount: {
+    type: Number,
+  },
 });
 
 const Book = mongoose.model("Book", bookSchema);
 
-module.exports = { book, validationSchema };
+function findError(book) {
+  const schema = Joi.object({
+    title: Joi.string().required(),
+    author: Joi.string().required(),
+    edition: Joi.number().required(),
+    tags: Joi.array().items(Joi.string()),
+    description: Joi.string().allow(""),
+    genre: Joi.string().required(),
+    price: Joi.number().required(),
+    coverImage: Joi.string(),
+    amount: Joi.number(),
+  });
+
+  const { error, value } = schema.validate(book);
+  return error;
+}
+
+module.exports = { Book, findError };

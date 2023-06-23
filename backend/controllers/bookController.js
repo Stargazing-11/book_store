@@ -1,29 +1,96 @@
-const { Book, validationSchema } = require("../models/bookModel.js");
+const { Book, findError } = require("../models/bookModel.js");
 
+// Add new book if the same book with the same edition doesn't exist
 async function addBook(req, res) {
   const { title, edition } = req.body;
+  // try to extract the existing book,
+  const existingBook = await Book.findOne({ title, edition });
+
+  if (existingBook) {
+    existingBook.amount += req.body.amount;
+    existingBook = await existingBook.save();
+    return res.status(201).send(existingBook);
+  }
+
+  if (!findError(req.body)) {
+    let book = Book(req.body);
+
+    book = (await book.save());
+    return res.status(201).send(book);
+  }
+  return res.status(422).send({ message: findError(req.body) });
+}
+
+// Get all books,
+async function getBooks(req, res) {
+  try {
+    const books = await Book.find();
+    return res.status(200).send(books);
+  } catch (error) {
+    return res.status(400).send(error.message);
+  }
+}
+
+// Get book By Id
+async function getBookById(req, res) {
+  const { id } = req.params;
+  try {
+    const book = await Book.findById(id);
+    if (!book) {
+      return res.status(404).json({ message: "Book not Found" });
+    }
+    return res.status(200).json(book);
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// search book by title, author or description
+async function searchBooks(req, res) {
+  const { query } = req.query;
 
   try {
-    // Check if a book with the same title and edition already exists
-    const existingBook = await Book.findOne({ title, edition });
+    // Perform a case-insensitive search for books matching the query
+    const books = await Book.find({
+      $or: [
+        { title: { $regex: "^" + "\\b" + query + "$", $options: "i" } },
+        { author: { $regex: "^" + "\\b" + query + "$", $options: "i" } },
+        { description: { $regex: "^" + "\\b" + query + "$", $options: "i" } },
+      ],
+    });
 
-    if (existingBook) {
-      return res.status(409).json({ error: "Book already exists" });
-    }
-
-    // Create a new book using the request body
-    const newBook = new Book(req.body);
-    await newBook.save();
-
-    // Book added successfully
-    return res
-      .status(201)
-      .json({ message: "Book added successfully", book: newBook });
+    return res.status(200).json(books);
   } catch (error) {
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Error searching for books:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+async function getBooksByAuthor(req, res) {
+  const { author } = req.params;
+  try {
+    const books = await Book.find({ author });
+    return res.status(200).send(books);
+  } catch (error) {
+    return res.status(400).send(error.message);
+  }
+}
+
+async function getBooksByGenre(req, res) {
+  const { genre } = req.params;
+  try {
+    const books = await Book.find({ genre });
+    return res.status(200).send(books);
+  } catch (error) {
+    return res.status(400).send(error.message);
   }
 }
 
 module.exports = {
   addBook,
+  getBooks,
+  getBookById,
+  getBooksByAuthor,
+  searchBooks,
+  getBooksByGenre,
 };
