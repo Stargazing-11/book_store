@@ -12,7 +12,7 @@ const {
   searchBooks,
 } = require("../controllers/bookController.js");
 
-router.post("/", errorHandler(addBook));
+router.post("/", [authMiddleware, isAdmin], errorHandler(addBook));
 router.get("/", authMiddleware, errorHandler(getBooks));
 router.get("/getBookById:id", authMiddleware, errorHandler(getBookById));
 router.get("/genres/:genre", authMiddleware, errorHandler(getBooksByGenre));

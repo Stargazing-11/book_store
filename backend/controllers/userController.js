@@ -46,7 +46,7 @@ async function login(req, res) {
     process.env.JWT_PRIVATE_KEY
   );
 
-  return res.header("Authorization", "Bearer " + token).status(200);
+  return res.header("Authorization", "Bearer " + token).status(200).send(_.pick(['firstName', 'lastName', 'role']));
 }
 
 module.exports = {
